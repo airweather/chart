@@ -2,14 +2,33 @@ import axios from "axios";
 import {useState, useEffect} from "react";
 
 const url = 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/';
-const fetchMode = {
-  method: 'GET',
-  mode: 'no-cors',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+
+let latitude;
+let longitude;
+
+const getLocation = () => {
+  if (navigator.geolocation) { // GPS를 지원하면
+    navigator.geolocation.getCurrentPosition((position) => {
+      latitude = Math.floor(position.coords.latitude);
+      longitude = Math.floor(position.coords.longitude);
+      // console.log(position.coords.latitude + ' ' + position.coords.longitude);
+    }, function(error) {
+      console.error(error);
+    }, {
+      enableHighAccuracy: false,
+      maximumAge: 0,
+      timeout: Infinity
+    });
+  } else {
+    alert('GPS를 지원하지 않습니다');
+  }
 }
 
+const getDate = new Date();
+const date = ''+getDate.getFullYear() 
+      + (getDate.getMonth() <9 ? '0' + (getDate.getMonth()+1).toString() : getDate.getMonth() + 1) 
+      + getDate.getDate();
+const time = (getDate.getHours() < 10 ? '0' + getDate.getHours().toString() : getDate.getHours().toString()) + (getDate.getMinutes() < 10 ? '0' + getDate.getMinutes().toString() : getDate.getMinutes().toString());
 
 
 const requestParams = {
@@ -23,16 +42,19 @@ const requestParams = {
   pageNo: 1,
   numOfRows: 1000,
   dataType: 'JSON',
-  base_date: 20230121,
-  base_time: '0600',
-  nx: 55,
+  base_date: date,
+  base_time: '0000',
+  nx: 37,
   ny: 127
 }
 
+
+
 function App() {
+  getLocation();
   const [currentWeather, setCurrentWeather] = useState();
 
-  // useEffect(() => {getWeather()}, []);
+  useEffect(() => {getWeather()}, []);
 
   const getWeather = () => {
     
@@ -52,40 +74,31 @@ function App() {
     //     console.log('curWeather : ',currentWeather);
     //   });
       
-      fetch(url+`${requestParams.type}?serviceKey=${requestParams.serviceKey}&pageNo=${requestParams.pageNo}&numOfRows=${requestParams.numOfRows}&dataType=${requestParams.dataType}&base_date=${requestParams.base_date}&base_time=${requestParams.base_time}&nx=${requestParams.nx}&ny=${requestParams.ny}`)
-      .then((response) => response.json())
-      .then((data) => {
-        const weatherData = data.response.body.items.item;
-        console.log(weatherData);
-        setCurrentWeather(weatherData);
-        console.log('current : ', currentWeather);
+    fetch(url+`${requestParams.type}?serviceKey=${requestParams.serviceKey}&pageNo=${requestParams.pageNo}&numOfRows=${requestParams.numOfRows}&dataType=${requestParams.dataType}&base_date=${requestParams.base_date}&base_time=${requestParams.base_time}&nx=${requestParams.nx}&ny=${requestParams.ny}`)
+    .then((response) => response.json())
+    .then((data) => {
+      const weatherData = data.response.body.items.item;
+      console.log(weatherData);
+      setCurrentWeather(weatherData);
+      console.log('current : ', currentWeather);
     });
   }
 
   const checkData = () => {
     console.log(currentWeather);
+    console.log(latitude)  ;
+    console.log(longitude);
   }
 
-  const showData = () => {
-    setCurrentWeather([...currentWeather, {a:'1'}]);
-  }
 
   return (
     <div className="App">
       <h1>Weather Check</h1>
       <button onClick={getWeather}>getWeather</button>
       <button onClick={checkData}>Check</button>
-      <button onClick={showData}>Show</button>
-      {/* {currentWeather?.map((weather) => {
-        <div key={weather.category}>
-          <div>{weather.category}</div>
-          <div>{weather.obsrValue}</div>
-        </div>
-      })} */}
-
       <div>
         {currentWeather?.map((weather) => {
-          <p>{weather.category}</p>
+          return <p key={weather.category}>{weather.category} : {weather.obsrValue}</p>
         })}
       </div>
 
